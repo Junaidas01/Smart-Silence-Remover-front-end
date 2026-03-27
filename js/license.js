@@ -5,7 +5,7 @@
 const License = {
     API_BASE: 'https://smart-silence-remover-production.up.railway.app/api/license',
     /** After a successful online verify, allow this long without blocking if verify is temporarily unreachable. */
-    GRACE_MS: 7 * 24 * 60 * 60 * 1000,
+    GRACE_MS: 3 * 24 * 60 * 60 * 1000,
 
     data: {
         key: '',
