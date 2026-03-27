@@ -1,0 +1,18 @@
+{
+  "name": "smartsilenceremover",
+  "version": "1.0.0",
+  "description": "Instantly remove silences and pauses from your Premiere Pro timeline with AI-powered detection. Optimize your workflow in one click with this professional, high-performance extension.",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.js",
+    "package": "node package.js",
+    "package:strict": "node package.js --strict",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "javascript-obfuscator": "^5.3.0"
+  }
+}

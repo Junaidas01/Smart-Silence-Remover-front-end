@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Silence Remover</title>
+
+
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+
+  <!-- ─── License Overlay ─────────────────────────────────────── -->
+  <div id="license-overlay" class="license-overlay">
+    <div class="license-card">
+      <div class="logo-large">🔇</div>
+      
+      <!-- Loader (Initial Check) -->
+      <div id="license-loader-group">
+        <div class="spinner"></div>
+        <p style="margin-bottom:0; font-weight:500;">Verifying license...</p>
+      </div>
+
+      <!-- Activation Form (Hidden during check) -->
+      <div id="license-setup-group" style="display: none;">
+        <h2 id="license-title">Enter activiton code</h2>
+        <p>Please enter your 30-day license key to continue.</p>
+        <input type="text" id="license-input" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
+        <button id="btn-activate">Activate Machine</button>
+      </div>
+
+      <div id="license-status" class="status-msg" style="margin-top:10px; display:none;"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+
+    <!-- ─── Header ─────────────────────────────────────────────────── -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-icon">🔇</div>
+        <div>
+          <div class="app-title">Smart Silence Remover for Premiere Pro</div>
+          <div class="app-version">v1.0.6-STABLE · Premiere Pro 2026</div>
+        </div>
+      </div>
+      <button class="btn-icon" id="btn-refresh" title="Refresh sequence info">↻</button>
+    </header>
+
+    <!-- ─── Scrollable Content ──────────────────────────────────────── -->
+    <div class="scroll-area">
+
+      <!-- Sequence Info -->
+      <div class="seq-card">
+        <div class="seq-row">
+          <div class="seq-item full">
+            <label class="section-label">Active Sequence</label>
+            <div class="seq-status-wrap">
+              <span class="seq-status ok" id="seq-status">Connected</span>
+              <span class="seq-name-val" id="seq-name">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="seq-row mt-10">
+          <div class="seq-item">
+            <label class="section-label">Duration</label>
+            <div class="seq-val" id="seq-duration">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="settings-card">
+        <div class="settings-title">⚙ Detection Settings</div>
+        <div class="slider-group">
+
+          <div class="slider-row">
+            <span class="slider-label">🔇 Silence Threshold</span>
+            <span class="slider-val" id="threshold-val">-40 dB</span>
+            <input type="range" id="threshold-slider"
+              min="-70" max="-10" step="1" value="-40"
+              title="Audio below this level is considered silence" />
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-label">⏱ Min Silence Length</span>
+            <span class="slider-val" id="min-silence-val">500 ms</span>
+            <input type="range" id="min-silence-slider"
+              min="100" max="3000" step="50" value="500"
+              title="Shortest silence to detect (ms)" />
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-label">🛡 Padding (each side)</span>
+            <span class="slider-val" id="padding-val">80 ms</span>
+            <input type="range" id="padding-slider"
+              min="0" max="500" step="10" value="80"
+              title="Extra audio to keep before/after each cut (ms)" />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Analyze Button -->
+      <button class="btn-analyze" id="btn-analyze" disabled>
+        <span>🔍</span> Analyze Audio
+      </button>
+
+      <!-- Progress Bar -->
+      <div id="progress-wrap" style="display:none;">
+        <div id="progress-bar"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-msg loading" id="status-msg">Connecting to Premiere Pro…</div>
+
+      <!-- Waveform Visualizer -->
+      <div class="section-title">Preview</div>
+      <div class="waveform-card">
+        <div class="waveform-header" style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-bottom:1px solid #252836;background:#1a1d26;">
+          <span id="silence-count" style="font-size:10px;font-weight:600;color:#8890a6;text-transform:uppercase;">Run analysis</span>
+          <span id="time-saved"    style="font-size:10px;font-weight:500;color:#6c8cff;"></span>
+        </div>
+        <canvas id="waveform-canvas" width="316" height="70"></canvas>
+      </div>
+
+      <!-- Silence Zones List -->
+      <div class="list-card">
+        <div class="list-header">
+          <span class="section-label">Silence Zones</span>
+          <span class="section-label" style="color:#4a5068;font-size:9px;">Toggle to keep / delete</span>
+        </div>
+        <div id="silence-list"></div>
+        <div id="empty-state">
+          <div class="empty-icon">🎙</div>
+          <div class="empty-text">No silences detected yet.<br/>Run analysis to scan the timeline.</div>
+        </div>
+      </div>
+
+    </div><!-- end .scroll-area -->
+
+    <!-- ─── Footer Actions ──────────────────────────────────────────── -->
+    <div class="footer-actions">
+      <button class="btn-remove" id="btn-remove" disabled>
+        <span>✂</span> Remove Silences
+      </button>
+      <button class="btn-undo" id="btn-undo" disabled title="Undo last removal">
+        ↩ Undo
+      </button>
+    </div>
+
+  </div><!-- end .panel -->
+
+  <!--
+    Script load order matters:
+    1. core     — Adobe bridge
+    2. bridge   — Node.js bridge
+    3. sys      — crypto primitives (must load before auth)
+    4. auth     — license state (depends on sys)
+    5. runtime  — UI logic (depends on auth + sys)
+  -->
+  <script src="./js/x7f2a.js"></script>
+  <script src="./js/k9d3e.js"></script>
+  <script src="./js/m4b8c.js"></script>
+  <script src="./js/p1e6f.js"></script>
+  <script src="./js/v3c5a.js"></script>
+
+</body>
+</html>
