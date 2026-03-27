@@ -60,9 +60,15 @@ async function initLicensing() {
         
         // If it's a Machine ID mismatch or the database record was deleted
         // Clear local storage so the user can re-activate fresh
-        if (result.error && (result.error.includes('Machine ID mismatch') || result.error.includes('License not found'))) {
+        const err = (result.error || '').toLowerCase();
+        if (
+            err.includes('machine id mismatch') ||
+            err.includes('machine mismatch') ||
+            err.includes('license not found')
+        ) {
             console.warn('License or Machine mismatch. Resetting local state.');
             localStorage.removeItem('ssr_license_data');
+            localStorage.removeItem('ssr_machine_id');
             License.data = { key: '', token: '', expiresAt: null, lastCheck: null };
         }
 
@@ -87,8 +93,10 @@ async function checkLicenseHeartbeat() {
     const result = await License.validate();
     if (!result.success) {
         showPanel(false);
-        setStatus('⚠ License session expired or connection lost.', 'error');
-        DOM.licenseStatus.textContent = result.error || 'Session expired. Please re-activate.';
+        setStatus('⚠ ' + (result.error || 'License verification failed.'), 'error');
+        DOM.licenseStatus.style.display = 'block';
+        DOM.licenseStatus.textContent = '⚠ ' + (result.error || 'Please re-activate.');
+        DOM.licenseStatus.className = 'status-msg error';
     }
 }
 
